@@ -1,8 +1,8 @@
 #include "mbed.h"
 #include "pins.h"
-#include "colors.h"
-#include "text.h"
 #include "lcd.h"
+
+//#include "SDFileSystem.h"
 
 // main() runs in its own thread in the OS
 int main()
@@ -13,24 +13,21 @@ int main()
 
     /* TODO:
         -> Bitmap read and print
-        -> Characters
      */
      /*   (x,y)
-     (0,0)     (0,480)
-        O------ y
+     (0,0)     (480,0)
+        O------ x
         |
         |
-        x
-     (320,0)
+        y
+     (0,320)
      
       */
-    lcd s(LCD_DATA, LCD_RST, LCD_CS, LCD_RS, LCD_WR, LCD_RD, 320, 480);
+    lcd s(LCD_DATA, LCD_RST, LCD_CS, LCD_RS, LCD_WR, LCD_RD, 480, 320);
 
-    while (true) {
+    s.cls();
 
-        int x,y,i;
-
-        s.fillcircle(160,240,30,0x001F);
-    }
+    s.fillcircle(240, 160, 50, RED);
+    s.string(140, 240, "Hello World!", BLACK);
+    s.segment(32,58,0,90,BLUE);
 }
-

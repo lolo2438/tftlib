@@ -1,9 +1,10 @@
 #include "lcd.h"
 
 lcd::lcd(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, PinName lcd_wr, PinName lcd_rd, unsigned short ScreenSize_X, unsigned short ScreenSize_Y)
-    : hw(lcd_data, lcd_rst, lcd_cs, lcd_rs, lcd_wr, lcd_rd), xSize(ScreenSize_X), ySize(ScreenSize_Y)
+    : hw(lcd_data, lcd_rst, lcd_cs, lcd_rs, lcd_wr, lcd_rd), xSize(ScreenSize_X), ySize(ScreenSize_Y), dfont(Terminal18x24, 18, 24)
 {
 
+    bgColor = 0xFFFF;     //set background color white
     xSize = ScreenSize_X;
     ySize = ScreenSize_Y;
 
@@ -43,7 +44,7 @@ lcd::lcd(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, Pin
     wr_data8(0x00);
 
     wr_cmd8(0x36);        // Memory Access Control
-    wr_data8(0x08);       // BGR screen
+    wr_data8(0xE8);       // BGR screen
     
     wr_cmd8(0x3A);        // Interface Pixel Format
     wr_data8(0x55);       // 16 bit/pixel for rgb and cpu interface
@@ -66,46 +67,40 @@ lcd::lcd(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, Pin
     wr_cmd8(0x29);        // Display on
 }
 
-void lcd::pixel(unsigned int x, unsigned int y, unsigned short color){
-
-    wr_cmd8(0x2A);
-    wr_data16(x);
-    wr_data16(x);
-
-    wr_cmd8(0x2B);
-    wr_data16(y);
-    wr_data16(y);
-
-    wr_gram(color, 1);
-}
-
-void lcd::hline(unsigned int x1, unsigned int x2,  unsigned int y, unsigned short color){
-
-    wr_cmd8(0x2A);
-    wr_data16(x1 < x2 ? x1 : x2);
-    wr_data16(x1 < x2 ? x2 : x1);
+void lcd::window(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2){
+    wr_cmd8(0x2A);  
+    wr_data16(x1);
+    wr_data16(x2);
 
     wr_cmd8(0x2B);
-    wr_data16(y);
-    wr_data16(y);
-
-    wr_gram(color, (x2 - x1) + 1);
+    wr_data16(y1);
+    wr_data16(y2);
 }
 
-void lcd::vline(unsigned int x, unsigned int y1, unsigned int y2, unsigned short color){
+void lcd::pixel(unsigned int x, unsigned int y, color_t color){
 
-    wr_cmd8(0x2A);
-    wr_data16(x);
-    wr_data16(x);
+    window(x,x,y,y);
 
-    wr_cmd8(0x2B);
-    wr_data16(y1 < y2 ? y1 : y2);
-    wr_data16(y1 < y2 ? y2 : y1);
-
-    wr_gram(color, (y2 - y1) + 1);
+    wr_gram(color);
 }
 
-void lcd::segment(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, unsigned short color){
+void lcd::hline(unsigned int x1, unsigned int x2, unsigned int y, color_t color){
+
+    window((x1 < x2 ? x1 : x2), (x1 < x2 ? x2 : x1), y, y);
+
+    int count = abs((int)(x2 - x1)) + 1;
+    wr_gram(color, (unsigned int)count);
+}
+
+void lcd::vline(unsigned int x, unsigned int y1, unsigned int y2, color_t color){
+
+    window(x,x,(y1 < y2 ? y1 : y2),(y1 < y2 ? y2 : y1));
+
+    int count = abs((int)(y2 - y1)) + 1;
+    wr_gram(color, (unsigned int)count);
+}
+
+void lcd::segment(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, color_t color){
 
     /* Algorithme: Brensnham line algorithme
        https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
@@ -138,7 +133,7 @@ void lcd::segment(unsigned int x1, unsigned int x2, unsigned int y1, unsigned in
     pixel(x2,y2,color);
 }
 
-void lcd::rect(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, unsigned short color){
+void lcd::rect(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, color_t color){
 
     hline(x1, x2, y1, color);
     hline(x1, x2, y2, color);
@@ -147,20 +142,15 @@ void lcd::rect(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y
     vline(x2, y1, y2, color);
 }
     
-void lcd::fillrect(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, unsigned short color){
+void lcd::fillrect(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, color_t color){
 
-    wr_cmd8(0x2A);
-    wr_data16(x1 < x2 ? x1 : x2);
-    wr_data16(x1 < x2 ? x2 : x1);
-
-    wr_cmd8(0x2B);
-    wr_data16(y1 < y2 ? y1 : y2);
-    wr_data16(y1 < y2 ? y2 : y1);
-    
-    wr_gram(color, (((x2 - x1) + 1) * ((y2 - y1) + 1)));
+    window((x1 < x2 ? x1 : x2),(x1 < x2 ? x2 : x1),(y1 < y2 ? y1 : y2),(y1 < y2 ? y2 : y1));
+  
+    int count = (abs((int)(x2 - x1)) + 1) * (abs((int)(y2 - y1)) + 1);
+    wr_gram(color, (unsigned int)count);
 }
     
-void lcd::circle(unsigned int x0, unsigned int y0, unsigned int r, unsigned short color){
+void lcd::circle(unsigned int x0, unsigned int y0, unsigned int r, color_t color){
     
     /*
     Algorithme: Cercle d'andres
@@ -239,7 +229,7 @@ void lcd::circle(unsigned int x0, unsigned int y0, unsigned int r, unsigned shor
     }
 }
 
-void lcd::fillcircle(unsigned int x0, unsigned int y0, unsigned int r, unsigned short color){
+void lcd::fillcircle(unsigned int x0, unsigned int y0, unsigned int r, color_t color){
 
     int x = 0;
     int y = r;
@@ -249,11 +239,11 @@ void lcd::fillcircle(unsigned int x0, unsigned int y0, unsigned int r, unsigned 
 
         vline((x0 + x), (y0 - y), (y0 + y), color);
         vline((x0 - x), (y0 - y), (y0 + y), color);
-        vline((x0 + y), (y0 - x), (y0 + x), color);
-        vline((x0 - y), (y0 - x), (y0 + x), color);
+       // vline((x0 + y), (y0 - x), (y0 + x), color);
+      //  vline((x0 - y), (y0 - x), (y0 + x), color);
 
-        hline((x0 - x), (x0 + x), (y0 + y), color);
-        hline((x0 - x), (x0 + x), (y0 - y), color);
+       // hline((x0 - x), (x0 + x), (y0 + y), color);
+       // hline((x0 - x), (x0 + x), (y0 - y), color);
         hline((x0 - y), (x0 + y), (y0 + x), color);
         hline((x0 - y), (x0 + y), (y0 - x), color);        
 
@@ -264,5 +254,66 @@ void lcd::fillcircle(unsigned int x0, unsigned int y0, unsigned int r, unsigned 
 
         x = x + 1;
         m = m + 8*x + 4;
+    }
+}
+
+void lcd::character(unsigned int x, unsigned int y, char c, color_t color){
+
+    if(c < 32 || c > 127)
+        return;
+  
+    unsigned int index = (c - 32) * dfont.x * dfont.ycount;
+
+    for(int i = 0; i < dfont.x; i += 1){
+        for(int j = 0; j < dfont.ycount; j += 1){
+            int w = 0;
+            for(int k = 0x01; k <= 0x80; k = k << 1){
+                char bit = (dfont.buf[index] & k);
+                pixel((x + i),y + j * 8 + w, (bit ? color : bgColor));
+                w += 1;
+            }
+
+            index += 1;
+        }
+ /* 
+            switch(dfont.buf[index + j]){
+            case 0x00:
+                vline(x + i, yoffset,  yoffset + 8, bgColor);
+                break;
+
+            case 0xFF:
+                vline(x + i, yoffset,  yoffset + 8, color);
+                break;
+*/
+            //default:
+
+                
+               // break;
+            }   
+}
+
+void lcd::string(unsigned int x, unsigned int y, const char *str, color_t color){
+
+    int xOffset;
+    while(*str){
+
+        character(x + xOffset, y, *str, color);
+        
+        xOffset += dfont.x;
+        ++str;
+    }
+}
+
+ 
+void lcd::stringbuf(unsigned int x, unsigned int y, const char *str, const color_t *colorbuf){
+
+    int xOffset;
+    while(str){
+
+        character(x + xOffset, y, *str, *colorbuf);
+        
+        xOffset += dfont.x;
+        ++colorbuf;
+        ++str;
     }
 }

@@ -74,6 +74,9 @@ void hw::wr_data32(unsigned int data){
 
 void hw::wr_gram(unsigned short color, unsigned int count){
 
+    unsigned char msb_color = (color >> 8) & 0xFF;
+    unsigned char lsb_color = color & 0xFF;
+
     rs = 0;
 
     dbus.write(0x2C);
@@ -84,12 +87,12 @@ void hw::wr_gram(unsigned short color, unsigned int count){
     rs = 1;
 
     while(count){
-
-        dbus.write(((color >> 8) & 0xFF)); 
+    
+        dbus.write(msb_color); 
         wr = 0;
         wr = 1;
 
-        dbus.write((color & 0xFF)); 
+        dbus.write(lsb_color); 
         wr = 0;
         wr = 1;
 
@@ -97,7 +100,39 @@ void hw::wr_gram(unsigned short color, unsigned int count){
     }
 }
 
+void hw::wr_gram(unsigned short color){
+
+    unsigned char msb_color = (color >> 8) & 0xFF;
+    unsigned char lsb_color = color & 0xFF;
+
+    rs = 0;
+
+    dbus.write(0x2C);
+    
+    wr = 0;
+    wr = 1;
+    
+    rs = 1;
+
+    dbus.write(msb_color); 
+    wr = 0;
+    wr = 1;
+
+    dbus.write(lsb_color); 
+    wr = 0;
+    wr = 1;
+}
+
 void hw::wr_grambuf(unsigned short *colorbuf, unsigned int count){
+
+    rs = 0;
+
+    dbus.write(0x2C);
+    
+    wr = 0;
+    wr = 1;
+    
+    rs = 1;
 
     while(count){
 
@@ -113,7 +148,6 @@ void hw::wr_grambuf(unsigned short *colorbuf, unsigned int count){
         count -= 1;
     }
 }
-
 
 unsigned char hw::rd_data8(void){
     

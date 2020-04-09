@@ -1,7 +1,7 @@
 #include "lcd.h"
 
 lcd::lcd(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, PinName lcd_wr, PinName lcd_rd, unsigned short ScreenSize_X, unsigned short ScreenSize_Y)
-    : hw(lcd_data, lcd_rst, lcd_cs, lcd_rs, lcd_wr, lcd_rd), xSize(ScreenSize_X), ySize(ScreenSize_Y), dfont(Terminal18x24, 18, 24)
+    : hw(lcd_data, lcd_rst, lcd_cs, lcd_rs, lcd_wr, lcd_rd), xSize(ScreenSize_X), ySize(ScreenSize_Y), dfont(Terminal12x16, 12, 16)
 {
 
     bgColor = 0xFFFF;     //set background color white
@@ -262,20 +262,17 @@ void lcd::character(unsigned int x, unsigned int y, char c, color_t color){
     if(c < 32 || c > 127)
         return;
   
+    window(x,x + dfont.x, y, y + dfont.y);
+    
     unsigned int index = (c - 32) * dfont.x * dfont.ycount;
 
     for(int i = 0; i < dfont.x; i += 1){
+        
         for(int j = 0; j < dfont.ycount; j += 1){
+            
             int w = 0;
-            for(int k = 0x01; k <= 0x80; k = k << 1){
-                char bit = (dfont.buf[index] & k);
-                pixel((x + i),y + j * 8 + w, (bit ? color : bgColor));
-                w += 1;
-            }
-
-            index += 1;
-        }
- /* 
+            int yoffset = y + j * 8;
+            
             switch(dfont.buf[index + j]){
             case 0x00:
                 vline(x + i, yoffset,  yoffset + 8, bgColor);
@@ -284,17 +281,23 @@ void lcd::character(unsigned int x, unsigned int y, char c, color_t color){
             case 0xFF:
                 vline(x + i, yoffset,  yoffset + 8, color);
                 break;
-*/
-            //default:
-
-                
-               // break;
-            }   
+            
+            default:
+                for(int k = 0x01; k <= 0x80; k = k << 1){
+                    char bit = (dfont.buf[index + j] & k);
+                    pixel((x + i), yoffset + w, (bit ? color : bgColor));
+                    w += 1;
+                }
+                break;
+            }      
+        }
+        index += dfont.ycount;
+    }
 }
 
 void lcd::string(unsigned int x, unsigned int y, const char *str, color_t color){
 
-    int xOffset;
+    int xOffset = 0;
     while(*str){
 
         character(x + xOffset, y, *str, color);
@@ -305,9 +308,9 @@ void lcd::string(unsigned int x, unsigned int y, const char *str, color_t color)
 }
 
  
-void lcd::stringbuf(unsigned int x, unsigned int y, const char *str, const color_t *colorbuf){
+void lcd::stringcbuf(unsigned int x, unsigned int y, const char *str, const color_t *colorbuf){
 
-    int xOffset;
+    int xOffset = 0;
     while(str){
 
         character(x + xOffset, y, *str, *colorbuf);
@@ -316,4 +319,10 @@ void lcd::stringbuf(unsigned int x, unsigned int y, const char *str, const color
         ++colorbuf;
         ++str;
     }
+}
+
+void lcd::wrcolorbuf(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, const color_t *colorbuf, bool skip_white){
+    
+    window(x1,x2,y1,y2);
+    wr_grambuf((unsigned short*)colorbuf, (x2-x1) * (y2-y1), skip_white);    
 }

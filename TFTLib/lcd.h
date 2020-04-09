@@ -17,7 +17,7 @@ class lcd : protected hw
 {
 
 public:
-    lcd(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, PinName lcd_wr, PinName lcd_rd, unsigned short ScreenSize_X = 480, unsigned short ScreenSize_Y = 320);
+    lcd(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, PinName lcd_wr, PinName lcd_rd, unsigned short ScreenSize_X, unsigned short ScreenSize_Y);
 
     /* =============================================================== */
     /*  Function: lcd::pixel
@@ -75,7 +75,11 @@ public:
 
     void string(unsigned int x, unsigned int y, const char *str, color_t color);
 
-    void stringbuf(unsigned int x, unsigned int y, const char *str, const color_t *colorbuf);
+    void stringcbuf(unsigned int x, unsigned int y, const char *str, const color_t *colorbuf);
+
+    /* =============================================================== */
+
+    void wrcolorbuf(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, const color_t *colorbuf, bool skip_white = 0);
 
     /* =============================================================== */
     
@@ -84,7 +88,7 @@ public:
 
     void cls(void) { fillrect(0, getXSize(), 0,getYSize(), bgColor); }
 
-    void setBgColor(unsigned short BgColor) { this->bgColor = BgColor; }
+    void setBgColor(color_t BgColor) { this->bgColor = BgColor; }
 
 private:
   

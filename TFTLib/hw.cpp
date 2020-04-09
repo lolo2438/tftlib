@@ -123,7 +123,7 @@ void hw::wr_gram(unsigned short color){
     wr = 1;
 }
 
-void hw::wr_grambuf(unsigned short *colorbuf, unsigned int count){
+void hw::wr_grambuf(unsigned short *colorbuf, unsigned int count, bool skip_white){
 
     rs = 0;
 
@@ -134,19 +134,43 @@ void hw::wr_grambuf(unsigned short *colorbuf, unsigned int count){
     
     rs = 1;
 
-    while(count){
+    if(!skip_white){
+        while(count){
 
-        dbus.write((((*colorbuf) >> 8) & 0xFF)); 
-        wr = 0;
-        wr = 1;
+            dbus.write((((*colorbuf) >> 8) & 0xFF)); 
+            wr = 0;
+            wr = 1;
 
-        dbus.write(((*colorbuf) & 0xFF)); 
-        wr = 0;
-        wr = 1;
+            dbus.write(((*colorbuf) & 0xFF)); 
+            wr = 0;
+            wr = 1;
 
-        colorbuf += 1;
-        count -= 1;
+            ++colorbuf;
+            --count;
+        }
     }
+    else{
+        while(count){
+
+            if(*colorbuf != 0xFFFF){
+                dbus.write((((*colorbuf) >> 8) & 0xFF)); 
+                wr = 0;
+                wr = 1;
+
+                dbus.write(((*colorbuf) & 0xFF)); 
+                wr = 0;
+                wr = 1;
+            }
+            else{
+                // TODO: skip this pixel;
+            }
+        
+            ++colorbuf;
+            --count;
+        }
+
+    }
+    
 }
 
 unsigned char hw::rd_data8(void){

@@ -16,7 +16,7 @@ protected:
     
     void wr_gram(unsigned short color, unsigned int count);
     void wr_gram(unsigned short color);
-    void wr_grambuf(unsigned short *colorbuf, unsigned int count);
+    void wr_grambuf(unsigned short *colorbuf, unsigned int count, bool skip_white = 0);
 
     unsigned char rd_data8(void);
     unsigned short rd_data16(void);

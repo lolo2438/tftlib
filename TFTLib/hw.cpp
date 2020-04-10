@@ -50,7 +50,6 @@ void hw::wr_data16(unsigned short data){
     dbus.write((data & 0xFF)); 
     wr = 0;
     wr = 1;
-
 }
 
 void hw::wr_data32(unsigned int data){
@@ -86,7 +85,7 @@ void hw::wr_gram(unsigned short color, unsigned int count){
     
     rs = 1;
 
-    while(count){
+    while(--count){
     
         dbus.write(msb_color); 
         wr = 0;
@@ -95,8 +94,6 @@ void hw::wr_gram(unsigned short color, unsigned int count){
         dbus.write(lsb_color); 
         wr = 0;
         wr = 1;
-
-        count -= 1;
     }
 }
 
@@ -123,52 +120,22 @@ void hw::wr_gram(unsigned short color){
     wr = 1;
 }
 
-void hw::wr_grambuf(unsigned short *colorbuf, unsigned int count, bool skip_white){
+void hw::wr_grambuf(const unsigned short *colorbuf, unsigned int count){
 
-    rs = 0;
+    wr_cmd8(0x2C);
 
-    dbus.write(0x2C);
-    
-    wr = 0;
-    wr = 1;
-    
-    rs = 1;
+    while(count){
 
-    if(!skip_white){
-        while(count){
+        dbus.write((((*colorbuf) >> 8) & 0xFF)); 
+        wr = 0;
+        wr = 1;
 
-            dbus.write((((*colorbuf) >> 8) & 0xFF)); 
-            wr = 0;
-            wr = 1;
+        dbus.write(((*colorbuf) & 0xFF)); 
+        wr = 0;
+        wr = 1;
 
-            dbus.write(((*colorbuf) & 0xFF)); 
-            wr = 0;
-            wr = 1;
-
-            ++colorbuf;
-            --count;
-        }
-    }
-    else{
-        while(count){
-
-            if(*colorbuf != 0xFFFF){
-                dbus.write((((*colorbuf) >> 8) & 0xFF)); 
-                wr = 0;
-                wr = 1;
-
-                dbus.write(((*colorbuf) & 0xFF)); 
-                wr = 0;
-                wr = 1;
-            }
-            else{
-                // TODO: skip this pixel;
-            }
-        
-            ++colorbuf;
-            --count;
-        }
-
+        ++colorbuf;
+        --count;
     }
     
 }
@@ -276,8 +243,8 @@ void hw::rd_gram(unsigned short *colorbuf, unsigned int count){
         rd = 1;
         *colorbuf |= (dbus.read() & 0xFF); 
 
-        colorbuf += 1;
-        count -= 1;
+        ++colorbuf;
+        --count;
     }
 
     dbus.output();

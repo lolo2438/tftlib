@@ -1,13 +1,9 @@
 #include "lcd.h"
+#include "ui_bg.h"
 
 lcd::lcd(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, PinName lcd_wr, PinName lcd_rd, unsigned short ScreenSize_X, unsigned short ScreenSize_Y)
-    : hw(lcd_data, lcd_rst, lcd_cs, lcd_rs, lcd_wr, lcd_rd), xSize(ScreenSize_X), ySize(ScreenSize_Y), dfont(Terminal12x16, 12, 16)
+    : hw(lcd_data, lcd_rst, lcd_cs, lcd_rs, lcd_wr, lcd_rd), xSize(ScreenSize_X), ySize(ScreenSize_Y), fontBgColor(WHITE), bgImg(ui_bg), dfont(Terminal12x16, 12, 16)
 {
-
-    bgColor = 0xFFFF;     //set background color white
-    xSize = ScreenSize_X;
-    ySize = ScreenSize_Y;
-
     // Init Sequence    
     wr_cmd8(0xE0);        // Positive gamma control
     wr_data8(0x0F);
@@ -67,7 +63,7 @@ lcd::lcd(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, Pin
     wr_cmd8(0x29);        // Display on
 }
 
-void lcd::window(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2){
+void lcd::set_window(unsigned short x1, unsigned short x2, unsigned short y1, unsigned short y2){
     wr_cmd8(0x2A);  
     wr_data16(x1);
     wr_data16(x2);
@@ -77,43 +73,44 @@ void lcd::window(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int
     wr_data16(y2);
 }
 
-void lcd::pixel(unsigned int x, unsigned int y, color_t color){
 
-    window(x,x,y,y);
+void lcd::pixel(unsigned short x, unsigned short y, color_t color){
+
+    set_window(x,x,y,y);
 
     wr_gram(color);
 }
 
-void lcd::hline(unsigned int x1, unsigned int x2, unsigned int y, color_t color){
+void lcd::hline(unsigned short x1, unsigned short x2, unsigned short y, color_t color){
 
-    window((x1 < x2 ? x1 : x2), (x1 < x2 ? x2 : x1), y, y);
+    set_window((x1 < x2 ? x1 : x2), (x1 < x2 ? x2 : x1), y, y);
 
-    int count = abs((int)(x2 - x1)) + 1;
-    wr_gram(color, (unsigned int)count);
+    short count = abs((short)(x2 - x1)) + 1;
+    wr_gram(color, (unsigned short)count);
 }
 
-void lcd::vline(unsigned int x, unsigned int y1, unsigned int y2, color_t color){
+void lcd::vline(unsigned short x, unsigned short y1, unsigned short y2, color_t color){
 
-    window(x,x,(y1 < y2 ? y1 : y2),(y1 < y2 ? y2 : y1));
+    set_window(x,x,(y1 < y2 ? y1 : y2),(y1 < y2 ? y2 : y1));
 
-    int count = abs((int)(y2 - y1)) + 1;
-    wr_gram(color, (unsigned int)count);
+    short count = abs((short)(y2 - y1)) + 1;
+    wr_gram(color, (unsigned short)count);
 }
 
-void lcd::segment(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, color_t color){
+void lcd::segment(unsigned short x1, unsigned short x2, unsigned short y1, unsigned short y2, color_t color){
 
     /* Algorithme: Brensnham line algorithme
        https://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
      */
 
-    int sx = x1 < x2 ? 1 : -1;
-    int dx = (x2 - x1) * sx;
+    short sx = x1 < x2 ? 1 : -1;
+    short dx = (x2 - x1) * sx;
     
-    int sy = y1 < y2 ? -1 : 1;
-    int dy = (y2 - y1) * sy;
+    short sy = y1 < y2 ? -1 : 1;
+    short dy = (y2 - y1) * sy;
     
-    int e = dx + dy;
-    int e2;
+    short e = dx + dy;
+    short e2;
     
     while((x1 != x2) && (y1 != y2)){
         pixel(x1, y1, color);
@@ -133,7 +130,7 @@ void lcd::segment(unsigned int x1, unsigned int x2, unsigned int y1, unsigned in
     pixel(x2,y2,color);
 }
 
-void lcd::rect(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, color_t color){
+void lcd::rect(unsigned short x1, unsigned short x2, unsigned short y1, unsigned short y2, color_t color){
 
     hline(x1, x2, y1, color);
     hline(x1, x2, y2, color);
@@ -142,15 +139,14 @@ void lcd::rect(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y
     vline(x2, y1, y2, color);
 }
     
-void lcd::fillrect(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, color_t color){
-
-    window((x1 < x2 ? x1 : x2),(x1 < x2 ? x2 : x1),(y1 < y2 ? y1 : y2),(y1 < y2 ? y2 : y1));
+void lcd::fillrect(unsigned short x1, unsigned short x2, unsigned short y1, unsigned short y2, color_t color){
+    set_window((x1 < x2 ? x1 : x2),(x1 < x2 ? x2 : x1),(y1 < y2 ? y1 : y2),(y1 < y2 ? y2 : y1));
   
-    int count = (abs((int)(x2 - x1)) + 1) * (abs((int)(y2 - y1)) + 1);
-    wr_gram(color, (unsigned int)count);
+    short count = (abs((short)(x2 - x1)) + 1) * (abs((short)(y2 - y1)) + 1);
+    wr_gram(color, (unsigned short)count);
 }
     
-void lcd::circle(unsigned int x0, unsigned int y0, unsigned int r, color_t color){
+void lcd::circle(unsigned short x0, unsigned short y0, unsigned short r, color_t color){
     
     /*
     Algorithme: Cercle d'andres
@@ -158,12 +154,12 @@ void lcd::circle(unsigned int x0, unsigned int y0, unsigned int r, color_t color
         Plus lent mais résoud le problème de bresenham
     */
     /*
-    int x = 0;
-    int y = r;
-    int d = r - 1;
+    short x = 0;
+    short y = r;
+    short d = r - 1;
 
-    int x_2;
-    int y_2;
+    short x_2;
+    short y_2;
 
     while(x <= y){
         pixel(x0 + x, y0 + y, color);
@@ -201,9 +197,9 @@ void lcd::circle(unsigned int x0, unsigned int y0, unsigned int r, color_t color
     Autre algorithme: cercle de bresenham
     https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_d%27arc_de_cercle_de_Bresenham
     */
-    int x = 0;
-    int y = r;
-    int m = 5 - 4*y;
+    short x = 0;
+    short y = r;
+    short m = 5 - 4*y;
 
     while(x <= y){
 
@@ -229,11 +225,11 @@ void lcd::circle(unsigned int x0, unsigned int y0, unsigned int r, color_t color
     }
 }
 
-void lcd::fillcircle(unsigned int x0, unsigned int y0, unsigned int r, color_t color){
+void lcd::fillcircle(unsigned short x0, unsigned short y0, unsigned short r, color_t color){
 
-    int x = 0;
-    int y = r;
-    int m = 5 - 4*y;
+    short x = 0;
+    short y = r;
+    short m = 5 - 4*y;
 
     while(x <= y){
 
@@ -257,12 +253,12 @@ void lcd::fillcircle(unsigned int x0, unsigned int y0, unsigned int r, color_t c
     }
 }
 
-void lcd::character(unsigned int x, unsigned int y, char c, color_t color){
+void lcd::character(unsigned short x, unsigned short y, char c, color_t color){
 
     if(c < 32 || c > 127)
         return;
   
-    window(x,x + dfont.x, y, y + dfont.y);
+    set_window(x,x + dfont.x, y, y + dfont.y);
     
     unsigned int index = (c - 32) * dfont.x * dfont.ycount;
 
@@ -275,7 +271,7 @@ void lcd::character(unsigned int x, unsigned int y, char c, color_t color){
             
             switch(dfont.buf[index + j]){
             case 0x00:
-                vline(x + i, yoffset,  yoffset + 8, bgColor);
+                vline(x + i, yoffset,  yoffset + 8, fontBgColor);
                 break;
 
             case 0xFF:
@@ -285,7 +281,7 @@ void lcd::character(unsigned int x, unsigned int y, char c, color_t color){
             default:
                 for(int k = 0x01; k <= 0x80; k = k << 1){
                     char bit = (dfont.buf[index + j] & k);
-                    pixel((x + i), yoffset + w, (bit ? color : bgColor));
+                    pixel((x + i), yoffset + w, (bit ? color : fontBgColor));
                     w += 1;
                 }
                 break;
@@ -295,9 +291,9 @@ void lcd::character(unsigned int x, unsigned int y, char c, color_t color){
     }
 }
 
-void lcd::string(unsigned int x, unsigned int y, const char *str, color_t color){
+void lcd::string(unsigned short x, unsigned short y, const char *str, color_t color){
 
-    int xOffset = 0;
+    short xOffset = 0;
     while(*str){
 
         character(x + xOffset, y, *str, color);
@@ -307,10 +303,9 @@ void lcd::string(unsigned int x, unsigned int y, const char *str, color_t color)
     }
 }
 
- 
-void lcd::stringcbuf(unsigned int x, unsigned int y, const char *str, const color_t *colorbuf){
+void lcd::stringcbuf(unsigned short x, unsigned short y, const char *str, const color_t *colorbuf){
 
-    int xOffset = 0;
+    short xOffset = 0;
     while(str){
 
         character(x + xOffset, y, *str, *colorbuf);
@@ -321,8 +316,34 @@ void lcd::stringcbuf(unsigned int x, unsigned int y, const char *str, const colo
     }
 }
 
-void lcd::wrcolorbuf(unsigned int x1, unsigned int x2, unsigned int y1, unsigned int y2, const color_t *colorbuf, bool skip_white){
+void lcd::wrcolorbuf(unsigned short x0, unsigned short y0, unsigned short xsize, unsigned short ysize, const color_t *colorbuf, bool skip_black){
     
-    window(x1,x2,y1,y2);
-    wr_grambuf((unsigned short*)colorbuf, (x2-x1) * (y2-y1), skip_white);    
+    unsigned short x_off = x0 + xsize - 1;
+    unsigned short y_off = y0 + ysize - 1;
+    unsigned int count = xsize * ysize;
+
+    set_window(x0, x_off, y0, y_off);
+
+    if(!skip_black){
+        wr_grambuf((const unsigned short*)colorbuf, count);   
+    }
+    else{
+        
+        wr_cmd8(0x2C);
+        
+        for(unsigned int y = y0; y < y0 + ysize; y += 1){
+            for(unsigned int x = x0; x < x0 + xsize; x += 1){
+                
+                if(*colorbuf == 0){
+                    unsigned int index = y * this->xSize + x;
+                    wr_data16((unsigned short)(bgImg[index]));
+                }
+                else{
+                    wr_data16((unsigned short)((*colorbuf)));
+                }
+
+                colorbuf += 1;
+            }
+        }
+    }
 }

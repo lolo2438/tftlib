@@ -17,26 +17,32 @@
 
 #include "colors.h"
 
-#define MAX_VOLTAGE 100
-#define MIN_VOLTAGE 10
+#define MAX_VOLTAGE 99
+#define MIN_VOLTAGE 0
 
 ui::ui(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, PinName lcd_wr, PinName lcd_rd, unsigned short ScreenSize_X, unsigned short ScreenSize_Y)
-    :s(lcd_data, lcd_rst, lcd_cs, lcd_rs, lcd_wr, lcd_rd, ScreenSize_X, ScreenSize_Y), battery_state{-1}, motor_state{1}
+    :s(lcd_data, lcd_rst, lcd_cs, lcd_rs, lcd_wr, lcd_rd, ScreenSize_X, ScreenSize_Y), battery_state{-1}, motor_state{false}, kswitch_state(true)
 {
-    s.setBgColor(0x738E);   //Grayish
-    s.wrcolorbuf(0, ScreenSize_X, 0, ScreenSize_Y, ui_bg);
+    s.setFontBgColor(0x738E);   //Grayish
+    s.wrcolorbuf(0, 0, ScreenSize_X, ScreenSize_Y, ui_bg);
+
+    draw_kswitch(false); 
+
+    for(int i = 1; i <= MOTOR_COUNT; i+= 1) draw_motor(i,true);
+
+    for(int i = 0; i < BATTERY_COUNT; i += 1){
+        draw_battery(i, MAX_VOLTAGE);
+    }
 }
 
-void ui::draw_battery(int battery_nb, int voltage){
+void ui::draw_battery(unsigned int battery_nb, int voltage){
    
     const int treshold[5] = { 90, 70, 50, 30, 10 };
 
-    const unsigned int battery_x_pos = 20;
+    const unsigned int battery_x_pos = 28;
     const unsigned int battery_y_pos[4] = {112, 166, 227, 278};
-    const unsigned int battery_x_size = 65;
-    const unsigned int battery_y_size = 25;
 
-    const unsigned int voltage_x_pos = 137;
+    const unsigned int voltage_x_pos = 140;
     const unsigned int voltage_y_pos[4] = {118, 172, 231, 284};
 
     const color_t *battery_img[6] = { bat_0_5, bat_1_5, bat_2_5, bat_3_5, bat_4_5, bat_5_5 };
@@ -55,37 +61,74 @@ void ui::draw_battery(int battery_nb, int voltage){
     if(b_state != battery_state[battery_nb]){
         battery_state[battery_nb] = b_state;
         //TODO: Faire en sorte que couleur blanc: OXFFFF ne soit pas écris, peut etre ajouter un flag// changer false a true
-        s.wrcolorbuf(battery_x_pos, battery_x_pos + battery_x_size, battery_y_pos[battery_nb], 
-                     battery_y_pos[battery_nb] + battery_y_size, battery_img[b_state], false);
+        s.wrcolorbuf(battery_x_pos, battery_y_pos[battery_nb], battery_x_size, battery_y_size, battery_img[b_state], true);
     }
 
     // TODO: Convert voltage to a string
-    char str[3];    // Attention au null terminator!! max value 99\0
-    sprintf(str,"%d", voltage);
+    char str[4];    // Attention au null terminator!! max value 99\0
+    sprintf(str,"%d ", voltage);
     s.string(voltage_x_pos, voltage_y_pos[battery_nb], str, BLACK);
 }
 
 
-void ui::draw_motor(int motor_nb, bool motor_status){
+void ui::draw_motor(unsigned int motor_nb, bool motor_status){
 
     const color_t *motor_img[2] = {m_off, m_on};
     
-    const unsigned int motor_x_pos[2] = { 0, 1 }; // [0] -> moteurs paires, [1] -> moteurs impaires
-    const unsigned int motor_y_pos[4] = { 0, 1, 2, 3 }; // 1 et 2 on le meme, 3 et 4 ont le meme...
+    const unsigned int motor_x_pos[2] = { 355, 215 }; // [0] -> moteurs paires, [1] -> moteurs impaires
+    const unsigned int motor_y_pos[4] = { 91, 148, 210, 265 }; // 1 et 2 on le meme, 3 et 4 ont le meme...
 
-    const unsigned int motor_x_size = 70;
-    const unsigned int motor_y_size = 34;
-
-    bool xindex = motor_nb % 2; // 1,3,5,7 ont le meme index, 2,4,6,8 ont le meme index
-    int yindex = motor_nb - (motor_nb / 2); // 1,2 ; 3,4 ; 5,6 ; 7,8 ; ont le meme index
+    unsigned int xindex = motor_nb % 2; // 1,3,5,7 ont le meme index, 2,4,6,8 ont le meme index
+    unsigned int yindex = (motor_nb - 1) - (motor_nb / 2); // 1,2 ; 3,4 ; 5,6 ; 7,8 ; ont le meme index
 
     if(motor_state[motor_nb - 1] != motor_status){
         motor_state[motor_nb - 1] = motor_status;
-        s.wrcolorbuf(motor_x_pos[xindex], motor_x_pos[xindex] + motor_x_size, motor_y_pos[yindex], 
-                     motor_y_pos[yindex] + motor_y_size, motor_img[motor_status], false);
+        s.wrcolorbuf(motor_x_pos[xindex], motor_y_pos[yindex], motor_x_size, motor_y_size, motor_img[motor_status], true);
     }
 }
 
-void ui::draw_kswitch(bool kswitch_state){
+void ui::draw_kswitch(bool kswitch_status){
+
+    const color_t *kswitch_img[2] = {kswitch_off, kswitch_on};
+    
+    const unsigned int kswitch_x_pos = 320;
+    const unsigned int kswitch_y_pos = 30;
+
+    if(kswitch_state != kswitch_status){
+        kswitch_state = kswitch_status;
+        s.wrcolorbuf(kswitch_x_pos, kswitch_y_pos, kswitch_x_size, kswitch_y_size, kswitch_img[kswitch_status], true);
+    }
+
+}
+
+void ui::demo(void){
+
+    draw_kswitch(true);
+    
+    wait_us(2000000);
+    
+    draw_kswitch(false);
+    
+    for(int i = 1; i <= MOTOR_COUNT; i+= 1) draw_motor(i,false);
+    
+    wait_us(2000000);
+    
+    for(int i = 1; i <= MOTOR_COUNT; i+= 1) draw_motor(i,true);
+
+    wait_us(2000000);
+
+    for(int i = 99; i >= 0; i -= 1){    //demo
+        for(int j = 0; j < BATTERY_COUNT; j += 1){
+            draw_battery(j, i);
+        }
+    }
+
+    for(int i = 0; i < 100; i += 1){    //demo
+        for(int j = 0; j < BATTERY_COUNT; j += 1){
+            draw_battery(j, i);
+        }
+    }
+
+    wait_us(2000000);
 
 }

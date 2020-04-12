@@ -17,7 +17,7 @@
 
 #include "colors.h"
 
-#define MAX_VOLTAGE 99
+#define MAX_VOLTAGE 18
 #define MIN_VOLTAGE 0
 
 ui::ui(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, PinName lcd_wr, PinName lcd_rd, unsigned short ScreenSize_X, unsigned short ScreenSize_Y)
@@ -37,7 +37,9 @@ ui::ui(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, PinNa
 
 void ui::draw_battery(unsigned int battery_nb, int voltage){
    
-    const int treshold[5] = { 90, 70, 50, 30, 10 };
+    if(voltage < MIN_VOLTAGE && voltage > MAX_VOLTAGE) return;
+    
+    const int treshold[5] = { 15, 12, 9, 6, 3 };
 
     const unsigned int battery_x_pos = 28;
     const unsigned int battery_y_pos[4] = {112, 166, 227, 278};
@@ -58,15 +60,15 @@ void ui::draw_battery(unsigned int battery_nb, int voltage){
     else                           b_state = 0;
 
     // Only redraw when needed
-    if(b_state != battery_state[battery_nb]){
+    if(battery_state[battery_nb] != b_state){
         battery_state[battery_nb] = b_state;
-        //TODO: Faire en sorte que couleur blanc: OXFFFF ne soit pas écris, peut etre ajouter un flag// changer false a true
         s.wrcolorbuf(battery_x_pos, battery_y_pos[battery_nb], battery_x_size, battery_y_size, battery_img[b_state], true);
     }
 
-    // TODO: Convert voltage to a string
-    char str[4];    // Attention au null terminator!! max value 99\0
-    sprintf(str,"%d ", voltage);
+    /* Resolution of .1 V*/
+    float volt = 15.0f + (float)voltage * 0.1f;
+    char str[5];    // Attention au null terminator!!
+    sprintf(str,"%2.1f", volt);
     s.string(voltage_x_pos, voltage_y_pos[battery_nb], str, BLACK);
 }
 
@@ -130,5 +132,4 @@ void ui::demo(void){
     }
 
     wait_us(2000000);
-
 }

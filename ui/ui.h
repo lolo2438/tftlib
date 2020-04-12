@@ -15,7 +15,7 @@ public:
         Desc: Will print the voltage of the specified battery, if the voltage goes down under
               defined threshold the battery icon will change.
         battery_nb = [0:3]
-        voltage = []
+        voltage = int value: [0:18], that represents [15V;16.8V] (0 -> 15V, 1 -> 15.1V)
      */
     void draw_battery(unsigned int battery_nb, int voltage);
 

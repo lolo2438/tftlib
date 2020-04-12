@@ -1,27 +1,89 @@
 #include "mbed.h"
 #include "pins.h"
 #include "ui.h"
-#include "lcd.h"
-#include "m_on.h"
-#include "ui_bg.h"
+#include "RS485_Definitions.h"
+
+//#define DEMO
+//#define SPEED_TEST
+
+#define BAUD_RATE 9600
+
+void _draw(void);
+
+RawSerial pc(USBTX, USBRX, BAUD_RATE); // tx, rx, baud
+
+PinName LCD_DATA[8] = {LCD_D0, LCD_D1, LCD_D2, LCD_D3, LCD_D4, LCD_D5, LCD_D6, LCD_D7};
+ui u(LCD_DATA, LCD_RST, LCD_CS, LCD_RS, LCD_WR, LCD_RD);
 
 // main() runs in its own thread in the OS
 int main()
 {
-    PinName LCD_DATA[8] = {LCD_D0, LCD_D1, LCD_D2, LCD_D3, LCD_D4, LCD_D5, LCD_D6, LCD_D7};
-    //115200
-   // Serial pc(USBTX, USBRX, 9600); // tx, rx, baud
+#ifdef DEMO
+    #ifdef SPEED_TEST
+        #include "lcd.h"
+        lcd s(LCD_DATA, LCD_RST, LCD_CS, LCD_RS, LCD_WR, LCD_RD);
 
-    /*   
-    */
-    //lcd s(LCD_DATA, LCD_RST, LCD_CS, LCD_RS, LCD_WR, LCD_RD, 480, 320);
+        while(true){
+            char id = pc.getc();
+            int data = pc.getc();
+        }
 
-   // s.fillrect(478,479,318,319,RED);
-   // s.pixel(479,319,BLUE);
+    #else
+        u.demo();
+    #endif
+#else
 
-    //s.wrcolorbuf(0, 0, 480, 320, ui_bg);
-  //  s.wrcolorbuf(0,0,70,34,m_on);
+    while(true){
 
-  ui u(LCD_DATA, LCD_RST, LCD_CS, LCD_RS, LCD_WR, LCD_RD);
-  u.demo();
+        char id = pc.getc();
+        char data = pc.getc();
+        
+        switch(id){
+        // Power supply 
+        case SLAVE_powersupply0:
+            u.draw_battery(0, data - 'a');
+            break;
+        case SLAVE_powersupply1:
+            u.draw_battery(1, data - 'a');
+            break;
+        case SLAVE_powersupply2:
+            u.draw_battery(2, data - 'a');
+            break;
+        case SLAVE_powersupply3:
+            u.draw_battery(3, data - 'a');
+            break;
+        
+        // Motors
+        case SLAVE_ESC_1:
+            u.draw_motor(1, data - '0');
+            break;
+        case SLAVE_ESC_2:
+            u.draw_motor(2, data - '0');
+            break;
+        case SLAVE_ESC_3:
+            u.draw_motor(3, data - '0');
+            break;
+        case SLAVE_ESC_4:
+            u.draw_motor(4, data - '0');
+            break;
+        case SLAVE_ESC_5:
+            u.draw_motor(5, data - '0');
+            break;
+        case SLAVE_ESC_6:
+            u.draw_motor(6, data - '0');
+            break;
+        case SLAVE_ESC_7:
+            u.draw_motor(7, data - '0');
+            break;
+        case SLAVE_ESC_8:
+            u.draw_motor(8, data - '0');
+            break;
+
+        // KillSwitch
+        case SLAVE_killMission:
+            u.draw_kswitch(data - '0');
+            break;
+        }
+    }
+#endif
 }

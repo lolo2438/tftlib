@@ -1,14 +1,11 @@
 #include "mbed.h"
 #include "pins.h"
 #include "ui.h"
-#include "RS485_Definitions.h"
+#include "RS485_DEF_DEMO.h"
 
-//#define DEMO
-//#define SPEED_TEST
+#define DEMO
 
-#define BAUD_RATE 9600
-
-void _draw(void);
+#define BAUD_RATE 115200
 
 RawSerial pc(USBTX, USBRX, BAUD_RATE); // tx, rx, baud
 
@@ -19,69 +16,80 @@ ui u(LCD_DATA, LCD_RST, LCD_CS, LCD_RS, LCD_WR, LCD_RD);
 int main()
 {
 #ifdef DEMO
-    #ifdef SPEED_TEST
-        #include "lcd.h"
-        lcd s(LCD_DATA, LCD_RST, LCD_CS, LCD_RS, LCD_WR, LCD_RD);
-
-        while(true){
-            char id = pc.getc();
-            int data = pc.getc();
-        }
-
-    #else
-        u.demo();
-    #endif
+    u.demo();
 #else
 
     while(true){
 
+        /* Replace these values with your own library */
         char id = pc.getc();
+        pc.putc(id);
+
         char data = pc.getc();
+        pc.putc(data);
+
+        pc.putc('\n');
+        pc.putc('\r');
         
+        /* Modify the data variable accordingly to your own values 
+           You should also set these values in the ui.h and ui.cpp */
         switch(id){
-        // Power supply 
+        // Power supply  
         case SLAVE_powersupply0:
-            u.draw_battery(0, data - 'a');
+            data -= PS_DATA_OFFSET;     //Delete this offset value in the real configuration
+            u.draw_battery(0, data);
             break;
         case SLAVE_powersupply1:
-            u.draw_battery(1, data - 'a');
+            data -= PS_DATA_OFFSET;
+            u.draw_battery(1, data);
             break;
         case SLAVE_powersupply2:
-            u.draw_battery(2, data - 'a');
+            data -= PS_DATA_OFFSET;
+            u.draw_battery(2, data);
             break;
         case SLAVE_powersupply3:
-            u.draw_battery(3, data - 'a');
+            data -= PS_DATA_OFFSET;
+            u.draw_battery(3, data);
             break;
         
         // Motors
         case SLAVE_ESC_1:
-            u.draw_motor(1, data - '0');
+            data -= MOTOR_DATA_OFFSET;
+            u.draw_motor(1, data);
             break;
         case SLAVE_ESC_2:
-            u.draw_motor(2, data - '0');
+            data -= MOTOR_DATA_OFFSET;
+            u.draw_motor(2, data);
             break;
         case SLAVE_ESC_3:
-            u.draw_motor(3, data - '0');
+            data -= MOTOR_DATA_OFFSET;
+            u.draw_motor(3, data);
             break;
         case SLAVE_ESC_4:
-            u.draw_motor(4, data - '0');
+            data -= MOTOR_DATA_OFFSET;
+            u.draw_motor(4, data);
             break;
         case SLAVE_ESC_5:
-            u.draw_motor(5, data - '0');
+            data -= MOTOR_DATA_OFFSET;
+            u.draw_motor(5, data);
             break;
         case SLAVE_ESC_6:
-            u.draw_motor(6, data - '0');
+            data -= MOTOR_DATA_OFFSET;
+            u.draw_motor(6, data);
             break;
         case SLAVE_ESC_7:
-            u.draw_motor(7, data - '0');
+            data -= MOTOR_DATA_OFFSET;
+            u.draw_motor(7, data);
             break;
         case SLAVE_ESC_8:
-            u.draw_motor(8, data - '0');
+            data -= MOTOR_DATA_OFFSET;
+            u.draw_motor(8, data);
             break;
 
         // KillSwitch
         case SLAVE_killMission:
-            u.draw_kswitch(data - '0');
+            data -= KS_DATA_OFFSET;
+            u.draw_kswitch(data);
             break;
         }
     }

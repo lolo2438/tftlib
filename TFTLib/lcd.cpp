@@ -4,7 +4,11 @@
 lcd::lcd(PinName *lcd_data, PinName lcd_rst, PinName lcd_cs, PinName lcd_rs, PinName lcd_wr, PinName lcd_rd, unsigned short ScreenSize_X, unsigned short ScreenSize_Y)
     : hw(lcd_data, lcd_rst, lcd_cs, lcd_rs, lcd_wr, lcd_rd), xSize(ScreenSize_X), ySize(ScreenSize_Y), fontBgColor(WHITE), bgImg(ui_bg), dfont(Terminal12x16, 12, 16)
 {
-    // Init Sequence    
+    // Init Sequence
+    /*  Les commandes pour le gamma on été prises de la librairie UNIGRAPHICS,
+        elles résoud un problème d'écran qui "flicker" sais raison apparentes.
+        A documenter peut etre...
+     */
     wr_cmd8(0xE0);        // Positive gamma control
     wr_data8(0x0F);
     wr_data8(0x18);
@@ -194,8 +198,10 @@ void lcd::circle(unsigned short x0, unsigned short y0, unsigned short r, color_t
     */
 
     /* 
-    Autre algorithme: cercle de bresenham
+    Algorithme: cercle de bresenham
     https://fr.wikipedia.org/wiki/Algorithme_de_trac%C3%A9_d%27arc_de_cercle_de_Bresenham
+    Rapide, mais si on dessine plusieurs cercles de rayon 1,2,..., n il va y avoir des pixel vides
+    entre les cercles
     */
     short x = 0;
     short y = r;

@@ -23,6 +23,12 @@
   (0,320)
 
 
+    Procedure to draw an image:
+    1. Set the screen window with lcd::set_window, this will set the start column, the end column, the start page and the end page
+       variable in the LCD controller.
+    2. Send a memory write command to the lcd with your data. After sending the memory write,
+       you can send all the pixels which will fill up the previously set window. The function wr_gram() does this job for you.
+
  */
 class lcd : protected hw
 {

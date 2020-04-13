@@ -3,8 +3,14 @@
 
 #include "lcd.h"
 
-#define BATTERY_COUNT 4
-#define MOTOR_COUNT 8
+#define BATTERY_COUNT               4
+#define BATTERY_MAX_VOLTAGE_INT     18
+#define BATTERY_MIN_VOLTAGE_INT     0
+#define BATTERY_MAX_VOLTAGE         16.8f
+#define BATTERY_MIN_VOLTAGE         15.0f
+#define BATTERY_RESOLUTION          0.1f    //Formula: (((BATTERY_MAX_VOLTAGE) - (BATTERY_MIN_VOLTAGE)) / ((BATTERY_MAX_VOLTAGE_INT) - (BATTERY_MIN_VOLTAGE_INT)))
+
+#define MOTOR_COUNT                 8
 
 class ui {
 
@@ -15,9 +21,9 @@ public:
         Desc: Will print the voltage of the specified battery, if the voltage goes down under
               defined threshold the battery icon will change.
         battery_nb = [0:3]
-        voltage = int value: [0:18], that represents [15V;16.8V] (0 -> 15V, 1 -> 15.1V)
+        voltage_int = int value: [0:18], that represents [15V;16.8V] (0 -> 15V, 18 -> 16.8V)
      */
-    void draw_battery(unsigned int battery_nb, int voltage);
+    void draw_battery(unsigned int battery_nb, int voltage_int);
 
     /* Function draw_motor
        Desc: will print the status of the specified motor on the screen

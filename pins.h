@@ -1,5 +1,5 @@
-#ifndef __DEFINES_H__
-#define __DEFINES_H__
+#ifndef __PINS_H__
+#define __PINS_H__
 
 #define LCD_RST A4
 #define LCD_CS  A3
